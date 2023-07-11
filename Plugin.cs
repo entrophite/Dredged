@@ -29,16 +29,27 @@ namespace Dredged
 		}
 
 		// configs
+		internal static ConfigEntry<bool> cfgPreventHullDamage;
+		internal static ConfigEntry<bool> cfgPreventDeath;
 		internal static ConfigEntry<bool> cfgAutoFishing;
 		internal static ConfigEntry<bool> cfgForceAberration;
 		internal static ConfigEntry<KeyboardShortcut> cfgForceAberrationToggleKey;
 		internal static ConfigEntry<bool> cfgForceTrophySize;
 		internal static ConfigEntry<KeyboardShortcut> cfgForceTrophySizeToggleKey;
+		internal static ConfigEntry<bool> cfgSlowRotting;
 
 		private void InitConfigs()
 		{
 			Config.SaveOnConfigSet = false;
 
+			cfgPreventHullDamage = Config.Bind("GENERAL",
+				"prevent_hull_damage",
+				true,
+				"hull will not receive any damage no matter what thing the boat runs into!");
+			cfgAutoFishing = Config.Bind("GENERAL",
+				"prevent_death",
+				true,
+				"no death afflicted");
 			cfgAutoFishing = Config.Bind("GENERAL",
 				"auto_fishing",
 				true,
@@ -59,6 +70,10 @@ namespace Dredged
 				"force_trophy_size_toggle_key",
 				new KeyboardShortcut(KeyCode.Alpha2, new KeyCode[] { KeyCode.LeftControl }),
 				"key to toggle \"force_trophy_size\" on/off");
+			cfgSlowRotting = Config.Bind("GENERAL",
+				"slow_rotting",
+				true,
+				"fish freshness degrades at 1/5 of the original speed (except for Conger Eel and its aberration form)");
 			Logger.LogInfo($"plugin configs initiated!");
 			return;
 		}
@@ -262,10 +277,10 @@ namespace Dredged
 		}
 	}
 
-	// TWEAK: HULL DAMAGE IMMUNITY
+	// TWEAK: PREVENT HULL DAMAGE
 	// no hull damage will be received no matter what the boat runs into!
 	[HarmonyPatch]
-	internal class DamageImmunity
+	internal class PreventHullDamage
 	{
 		[HarmonyTargetMethod]
 		static MethodBase TargetMethod()
@@ -285,7 +300,28 @@ namespace Dredged
 		[HarmonyPrefix]
 		static bool Prefix()
 		{
-			return false;
+			return !Plugin.cfgPreventHullDamage.Value;
+		}
+	}
+
+	// TWEAK: PREVENT DEATH
+	[HarmonyPatch]
+	internal class PreventDeath
+	{
+		[HarmonyTargetMethod]
+		static MethodBase TargetMethod()
+		{
+			return AccessTools.Method(
+				typeof(Player),
+				"Die",
+				new System.Type[] { }
+			);
+		}
+
+		[HarmonyPrefix]
+		static bool Prefix()
+		{
+			return !Plugin.cfgPreventDeath.Value;
 		}
 	}
 
@@ -301,6 +337,27 @@ namespace Dredged
 			if (Plugin.cfgForceTrophySize.Value)
 				sizeGenerationMode = FishSizeGenerationMode.FORCE_BIG_TROPHY;
 			return true;
+		}
+	}
+
+	// TWEAK: SLOW ROTTING
+	[HarmonyPatch(typeof(FreshnessCoroutine))]
+	[HarmonyPatch("AdjustFreshnessForGrid")]
+	internal class SlowRotting
+	{
+		static bool Prefix(ref SerializableGrid grid, ref float change)
+		{
+			if (!Plugin.cfgSlowRotting.Value)
+				return true; // use the original method
+			foreach (var itemInstance in grid.GetAllItemsOfType<FishItemInstance>(ItemType.GENERAL, ItemSubtype.FISH))
+			{
+				if ((itemInstance.id != "conger-eel") && (itemInstance.id != "conger-eel-ab-1"))
+					change *= 0.2f;
+				itemInstance.freshness = Mathf.Max(itemInstance.freshness - change, 0f);
+				if (itemInstance.freshness <= 0f)
+					GameManager.Instance.ItemManager.ReplaceFishWithRot(itemInstance, grid, false);
+			};
+			return false;
 		}
 	}
 }

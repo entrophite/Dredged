@@ -7,7 +7,9 @@ Requires BepInEx 5.4 (Mono) for x86.
 * Automated fishing
 * Force getting trophy-size fish
 * Force getting aberration fish
-* No hull damage
+* Prevent hull damage
+* Prevent death
+* Slow rotting speed
 
 ## Compilation Notes
 
