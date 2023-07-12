@@ -13,11 +13,11 @@ namespace Dredged
 	{
 		internal static ManualLogSource Log;
 
-		private void Awake()
+		public void Awake()
 		{
 			Log = Logger;
 			// Plugin startup logic
-			Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
+			Log.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
 			InitConfigs();
 
 			// load harmony patches
@@ -40,7 +40,7 @@ namespace Dredged
 
 		private void InitConfigs()
 		{
-			Config.SaveOnConfigSet = false;
+			Config.SaveOnConfigSet = true;
 
 			cfgPreventHullDamage = Config.Bind("GENERAL",
 				"prevent_hull_damage",
@@ -60,7 +60,7 @@ namespace Dredged
 				"fishing always results in aberration type when available");
 			cfgForceAberrationToggleKey = Config.Bind("GENERAL",
 				"force_aberration_toggle_key",
-				new KeyboardShortcut(KeyCode.Alpha1, new KeyCode[] { KeyCode.LeftControl }),
+				new KeyboardShortcut(KeyCode.Alpha1, new KeyCode[] { KeyCode.LeftAlt }),
 				"key to toggle \"force_aberration\" on/off");
 			cfgForceTrophySize = Config.Bind("GENERAL",
 				"force_trophy_size",
@@ -68,7 +68,7 @@ namespace Dredged
 				"fishing always results in aberration type when available");
 			cfgForceTrophySizeToggleKey = Config.Bind("GENERAL",
 				"force_trophy_size_toggle_key",
-				new KeyboardShortcut(KeyCode.Alpha2, new KeyCode[] { KeyCode.LeftControl }),
+				new KeyboardShortcut(KeyCode.Alpha2, new KeyCode[] { KeyCode.LeftAlt }),
 				"key to toggle \"force_trophy_size\" on/off");
 			cfgSlowRotting = Config.Bind("GENERAL",
 				"slow_rotting",
